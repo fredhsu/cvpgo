@@ -19,6 +19,11 @@ type AuthResp struct {
 	SessionId string `json:"sessionId"`
 }
 
+type Configlet struct {
+	Config string `json:"config"`
+	Name   string `json:"name"`
+}
+
 type AddInventory struct {
 	Data []AddInventoryElement `json:"data"`
 }
@@ -38,6 +43,27 @@ type ContainerListElement struct {
 	Type             string `json:"type"`
 }
 
+func AddConfiglet(configlet Configlet, cookies []*http.Cookie, client *http.Client) error {
+	jsonValue, err := json.Marshal(configlet)
+	addConfigletUrl := "/configlet/addConfiglet.do"
+	url := baseurl + addConfigletUrl
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	fmt.Println("response Body:", string(body))
+	return nil
+}
+
 func AddDevice(ipAddr string, cookies []*http.Cookie, client *http.Client) error {
 	addDevice := AddInventoryElement{
 		ContainerName: "Tenant",
@@ -49,7 +75,6 @@ func AddDevice(ipAddr string, cookies []*http.Cookie, client *http.Client) error
 	addInventory := AddInventory{
 		Data: []AddInventoryElement{addDevice},
 	}
-
 	jsonValue, err := json.Marshal(addInventory)
 	addInventoryUrl := "/inventory/add/addToInventory.do?startIndex=0&endIndex=15"
 	url := baseurl + addInventoryUrl
@@ -82,7 +107,6 @@ func main() {
 	url := baseurl + authUrl
 	fmt.Println(url)
 	user := User{UserId: "cvpadmin", Password: "arista123"}
-	//user := map[string]string{"userId": "cvpadmin", "password": "arista123"}
 	fmt.Println(user)
 	jsonValue, err := json.Marshal(user)
 	if err != nil {
@@ -109,6 +133,9 @@ func main() {
 	fmt.Printf("Response JSON %s", authresp)
 	cookies := resp.Cookies()
 
-	AddDevice("10.10.10.2", cookies, client)
-	AddDevice("10.10.10.3", cookies, client)
+	// AddDevice("10.10.10.2", cookies, client)
+	// AddDevice("10.10.10.3", cookies, client)
+
+	configlet := Configlet{Config: "hostname test1\ninterface ethernet1\nip address 10.1.1.1/24\n", Name: "test1"}
+	AddConfiglet(configlet, cookies, client)
 }
