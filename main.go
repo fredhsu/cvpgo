@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	//"github.com/fredhsu/cvpgo/configlet"
+	"github.com/fredhsu/cvpgo/inventory"
 	"io/ioutil"
 	"net/http"
 )
@@ -17,11 +19,6 @@ type User struct {
 type AuthResp struct {
 	UserName  string `json:"userName"`
 	SessionId string `json:"sessionId"`
-}
-
-type Configlet struct {
-	Config string `json:"config"`
-	Name   string `json:"name"`
 }
 
 type AddInventory struct {
@@ -41,27 +38,6 @@ type ContainerListElement struct {
 	Key              string `json:"key"`
 	ChildContainerId string `json:"childContainerId"`
 	Type             string `json:"type"`
-}
-
-func AddConfiglet(configlet Configlet, cookies []*http.Cookie, client *http.Client) error {
-	jsonValue, err := json.Marshal(configlet)
-	addConfigletUrl := "/configlet/addConfiglet.do"
-	url := baseurl + addConfigletUrl
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
-	for _, c := range cookies {
-		req.AddCookie(c)
-	}
-	req.Header.Add("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	fmt.Println("response Body:", string(body))
-	return nil
 }
 
 func AddDevice(ipAddr string, cookies []*http.Cookie, client *http.Client) error {
@@ -107,7 +83,6 @@ func main() {
 	url := baseurl + authUrl
 	fmt.Println(url)
 	user := User{UserId: "cvpadmin", Password: "arista123"}
-	fmt.Println(user)
 	jsonValue, err := json.Marshal(user)
 	if err != nil {
 		fmt.Println("error marshalling")
@@ -127,15 +102,11 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("response Body:", string(body))
 	authresp := AuthResp{}
 	json.Unmarshal(body, &authresp)
 	fmt.Printf("Response JSON %s", authresp)
 	cookies := resp.Cookies()
 
-	// AddDevice("10.10.10.2", cookies, client)
-	// AddDevice("10.10.10.3", cookies, client)
+	inventory.AddDevice("10.10.10.2", cookies, client)
 
-	configlet := Configlet{Config: "hostname test1\ninterface ethernet1\nip address 10.1.1.1/24\n", Name: "test1"}
-	AddConfiglet(configlet, cookies, client)
 }
