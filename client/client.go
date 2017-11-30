@@ -9,11 +9,11 @@ import (
 	"net/http"
 )
 
+// CvpClient provides a client to a CVP Host
 type CvpClient struct {
-	IpAddress string
-	BaseURL   string
-	Client    *http.Client
-	Cookies   []*http.Cookie
+	BaseURL string
+	Client  *http.Client
+	Cookies []*http.Cookie
 }
 
 // User defines a CVP user
@@ -27,13 +27,13 @@ type authResp struct {
 	SessionID string `json:"sessionId"`
 }
 
-// New creates a new CVP Client to host
+// New creates a new CVP Client pointing to host
 func New(host string, user string, password string) CvpClient {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	c := CvpClient{IpAddress: host, BaseURL: "https://" + host + "/cvpservice", Client: client}
+	c := CvpClient{BaseURL: "https://" + host + "/cvpservice", Client: client}
 	c.authenticate(user, password)
 	return c
 }
