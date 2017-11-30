@@ -1,9 +1,4 @@
-package configlet
-
-import (
-	"github.com/fredhsu/cvpgo/client"
-	"net/http"
-)
+package cvpgo
 
 type AddConfigletResp struct {
 	Data []struct {
@@ -29,9 +24,8 @@ type Configlet struct {
 	Name   string `json:"name"`
 }
 
-func AddConfiglet(configlet Configlet, cookies []*http.Cookie, client *http.Client) error {
-	addConfigletUrl := "/configlet/addConfiglet.do"
-	cvpgo.SetHost("172.28.169.180")
-	_, err := cvpgo.Call(configlet, addConfigletUrl, cookies)
+func (c *CvpClient) AddConfiglet(configlet Configlet) error {
+	addConfigletURL := "/configlet/addConfiglet.do"
+	_, err := c.Call(configlet, addConfigletURL)
 	return err
 }
