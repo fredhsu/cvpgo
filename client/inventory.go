@@ -88,10 +88,10 @@ type ContainerListElement struct {
 }
 
 // AddDevice adds a device into CVP's inventory
-func (c *CvpClient) AddDevice(ipAddr string) error {
+func (c *CvpClient) AddDevice(ipAddr string, cn string) error {
 	element := []AddInventoryElement{
 		AddInventoryElement{
-			ContainerName: "Tenant",
+			ContainerName: cn,
 			ContainerId:   "root",
 			ContainerType: "Existing",
 			IpAddress:     ipAddr,
