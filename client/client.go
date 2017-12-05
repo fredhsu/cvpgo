@@ -77,6 +77,6 @@ func (c *CvpClient) Call(obj interface{}, svcurl string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("response Body:", string(body))
+	// fmt.Println("response Body:", string(body))
 	return body, nil
 }
