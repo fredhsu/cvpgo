@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -63,8 +64,29 @@ func (c *CvpClient) authenticate(username string, password string) {
 // Call issues a POST to the svcurl with a JSON encoded obj
 func (c *CvpClient) Call(obj interface{}, svcurl string) ([]byte, error) {
 	jsonValue, err := json.Marshal(obj)
+	log.Printf("Calling POST with JSON: %s", jsonValue)
 	url := c.BaseURL + svcurl
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	for _, c := range c.Cookies {
+		req.AddCookie(c)
+	}
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	// fmt.Println("response Body:", string(body))
+	return body, nil
+}
+
+// Get issues a HTTP GET to the specified CVP service and returns the data
+func (c *CvpClient) Get(svcurl string) ([]byte, error) {
+	url := c.BaseURL + svcurl
+	req, err := http.NewRequest("GET", url, nil)
 	for _, c := range c.Cookies {
 		req.AddCookie(c)
 	}

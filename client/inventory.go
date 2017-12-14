@@ -1,5 +1,26 @@
 package cvpgo
 
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+)
+
+type GetInventory struct {
+	Total          int          `json:"total"`
+	NetElementList []NetElement `json:"netElementList"`
+}
+type NetElement struct {
+	ModeName         string `json:"modelName"`
+	InternalVersion  string `json:"internalVersion"`
+	SystemMacAddress string `json:"systemMacAddress"`
+	SerialNumber     string `json:"serialNumber"`
+	Version          string `json:"version"`
+	Fqdn             string `json:"fqdn"`
+	Key              string `json:"key"`
+	IPAddress        string `json:"ipAddress"`
+}
+
 type InventoryData struct {
 	Total      int `json:"total"`
 	Containers struct {
@@ -104,4 +125,21 @@ func (c *CvpClient) AddDevice(ipAddr string, cn string) error {
 	addInventoryURL := "/inventory/add/addToInventory.do?startIndex=0&endIndex=15"
 	_, err := c.Call(addInventory, addInventoryURL)
 	return err
+}
+
+// GetDevice uses the hostname of a device to lookup the full entry in CVP
+// and returns the full NetElement entry
+func (c *CvpClient) GetDevice(hostname string) (*NetElement, error) {
+	getDeviceURL := "/inventory/getInventory.do?queryparam=" + hostname + "&startIndex=0&endIndex=0"
+	respbody, err := c.Get(getDeviceURL)
+	respDevice := GetInventory{}
+	err = json.Unmarshal(respbody, &respDevice)
+	if err != nil {
+		log.Printf("Error decoding getdevice :%s\n", err)
+		return nil, err
+	}
+	if len(respDevice.NetElementList) == 0 {
+		return nil, fmt.Errorf("No devices returned")
+	}
+	return &respDevice.NetElementList[0], err
 }
