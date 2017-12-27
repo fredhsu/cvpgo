@@ -143,3 +143,19 @@ func (c *CvpClient) GetDevice(hostname string) (*NetElement, error) {
 	}
 	return &respDevice.NetElementList[0], err
 }
+
+// GetInventory will return all the devices in CVP
+func (c *CvpClient) GetInventory(query string) (*[]NetElement, error) {
+	getDeviceURL := "/inventory/getInventory.do?queryparam=" + query + "&startIndex=0&endIndex=0"
+	respbody, err := c.Get(getDeviceURL)
+	respDevice := GetInventory{}
+	err = json.Unmarshal(respbody, &respDevice)
+	if err != nil {
+		log.Printf("Error decoding getdevice :%s\n", err)
+		return nil, err
+	}
+	if len(respDevice.NetElementList) == 0 {
+		return nil, fmt.Errorf("No devices returned")
+	}
+	return &respDevice.NetElementList, err
+}
