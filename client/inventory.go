@@ -10,6 +10,17 @@ type GetInventory struct {
 	Total          int          `json:"total"`
 	NetElementList []NetElement `json:"netElementList"`
 }
+
+type GetContainer struct {
+	Total         int         `json:"total"`
+	ContainerList []Container `json:"containerList"`
+}
+
+type Container struct {
+	Name string `json:"name"`
+	Key  string `json:"key"`
+}
+
 type NetElement struct {
 	ModeName         string `json:"modelName"`
 	InternalVersion  string `json:"internalVersion"`
@@ -110,10 +121,11 @@ type ContainerListElement struct {
 
 // AddDevice adds a device into CVP's inventory
 func (c *CvpClient) AddDevice(ipAddr string, cn string) error {
+	container, err := c.GetContainerByName(cn)
 	element := []AddInventoryElement{
 		AddInventoryElement{
 			ContainerName: cn,
-			ContainerId:   "root",
+			ContainerId:   container.Key,
 			ContainerType: "Existing",
 			IpAddress:     ipAddr,
 			ContainerList: []ContainerListElement{},
@@ -123,7 +135,24 @@ func (c *CvpClient) AddDevice(ipAddr string, cn string) error {
 		Data: element,
 	}
 	addInventoryURL := "/inventory/add/addToInventory.do?startIndex=0&endIndex=15"
-	_, err := c.Call(addInventory, addInventoryURL)
+	_, err = c.Call(addInventory, addInventoryURL)
+	return err
+}
+
+// AddDevice adds a device into CVP's inventory
+func (c *CvpClient) SaveInventory() error {
+	saveInventoryURL := "/inventory/v2/saveInventory.do"
+	_, err := c.Call("", saveInventoryURL)
+	return err
+}
+
+// Removes device from CVP's inventory
+func (c *CvpClient) RemoveDevice(mac string) error {
+	data := struct {
+		Data []string `json:"data"`
+	}{[]string{mac}}
+	RemoveInventoryURL := "/inventory/deleteDevices.do?"
+	_, err := c.Call(data, RemoveInventoryURL)
 	return err
 }
 
@@ -142,6 +171,22 @@ func (c *CvpClient) GetDevice(hostname string) (*NetElement, error) {
 		return nil, fmt.Errorf("No devices returned")
 	}
 	return &respDevice.NetElementList[0], err
+}
+
+// Returns a container that exactly matches the name.
+func (c *CvpClient) GetContainerByName(query string) (*Container, error) {
+	getContainerURL := "/provisioning/searchTopology.do?queryParam=" + query + "&startIndex=0&endIndex=0"
+	respbody, err := c.Get(getContainerURL)
+	respContainer := GetContainer{}
+	err = json.Unmarshal(respbody, &respContainer)
+	if err != nil {
+		log.Printf("Error decoding getcontainer :%s\n", err)
+		return nil, err
+	}
+	if len(respContainer.ContainerList) == 0 {
+		return nil, fmt.Errorf("No devices returned")
+	}
+	return &respContainer.ContainerList[0], err
 }
 
 // GetInventory will return all the devices in CVP
