@@ -4,11 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
+	"time"
+)
+
+var (
+	wg sync.WaitGroup
 )
 
 type GetInventory struct {
 	Total          int          `json:"total"`
 	NetElementList []NetElement `json:"netElementList"`
+}
+
+type GetTempInventory struct {
+	Total              int              `json:"total"`
+	TempNetElementList []TempNetElement `json:"tempNetElement"`
 }
 
 type GetContainer struct {
@@ -30,6 +41,18 @@ type NetElement struct {
 	Fqdn             string `json:"fqdn"`
 	Key              string `json:"key"`
 	IPAddress        string `json:"ipAddress"`
+}
+
+type TempNetElement struct {
+	ModeName         string `json:"modelName"`
+	InternalVersion  string `json:"internalVersion"`
+	SystemMacAddress string `json:"systemMacAddress"`
+	SerialNumber     string `json:"serialNumber"`
+	Version          string `json:"version"`
+	Fqdn             string `json:"fqdn"`
+	Key              string `json:"key"`
+	IPAddress        string `json:"ipAddress"`
+	Status           string `json:"status"`
 }
 
 type InventoryData struct {
@@ -122,6 +145,9 @@ type ContainerListElement struct {
 // AddDevice adds a device into CVP's inventory
 func (c *CvpClient) AddDevice(ipAddr string, cn string) error {
 	container, err := c.GetContainerByName(cn)
+	if err != nil {
+		return err
+	}
 	element := []AddInventoryElement{
 		AddInventoryElement{
 			ContainerName: cn,
@@ -139,11 +165,49 @@ func (c *CvpClient) AddDevice(ipAddr string, cn string) error {
 	return err
 }
 
-// AddDevice adds a device into CVP's inventory
+// SaveInventory saves all connected devices from CVP's temp into normal inventory
 func (c *CvpClient) SaveInventory() error {
 	saveInventoryURL := "/inventory/v2/saveInventory.do"
 	_, err := c.Call("", saveInventoryURL)
 	return err
+}
+
+// SearchInventory searches for a device CVP's temp inventory
+func (c *CvpClient) SearchInventory(ip string) (*TempNetElement, error) {
+	searchInventoryURL := "/inventory/add/searchInventory.do?queryparam=" + ip + "&startIndex=0&endIndex=0"
+	respbody, err := c.Get(searchInventoryURL)
+	respDevice := GetTempInventory{}
+	err = json.Unmarshal(respbody, &respDevice)
+	if err != nil {
+		log.Printf("Error decoding getdevice :%s\n", err)
+		return nil, err
+	}
+	if len(respDevice.TempNetElementList) == 0 {
+		return nil, fmt.Errorf("No devices returned")
+	}
+	return &respDevice.TempNetElementList[0], err
+}
+
+// SaveCommit tries to save a device into CVP's inventory if it's connected
+func (c *CvpClient) SaveCommit(ip string, seconds int) error {
+	timeout := time.After(time.Duration(seconds) * time.Second)
+
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("Device is still not connected")
+		default:
+		}
+		dev, err := c.SearchInventory(ip)
+		if err != nil {
+			return err
+		}
+		if dev.Status == "Connected" {
+			return c.SaveInventory()
+		}
+		time.Sleep(1 * time.Second)
+		continue
+	}
 }
 
 // Removes device from CVP's inventory
@@ -184,7 +248,7 @@ func (c *CvpClient) GetContainerByName(query string) (*Container, error) {
 		return nil, err
 	}
 	if len(respContainer.ContainerList) == 0 {
-		return nil, fmt.Errorf("No devices returned")
+		return nil, fmt.Errorf("No container named \"%s\" found", query)
 	}
 	return &respContainer.ContainerList[0], err
 }

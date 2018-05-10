@@ -22,14 +22,14 @@ type InventoryTestData struct {
 func buildTestData() *InventoryTestData {
 	result := InventoryTestData{}
 	result.CVP = &CVPInfo{
-		IPAddress: "192.168.133.1",
+		IPAddress: "localhost",
 		Username:  "cvpadmin",
 		Password:  "cvpadmin1",
 		Container: "Test"}
-	result.DeviceIP = "172.26.0.2"
-	result.DeviceContainer = "Test"
-	result.DeviceHostname = "localhost"
-	result.DeviceMAC = "02:42:c0:be:b2:37"
+	result.DeviceIP = "172.19.0.3"
+	result.DeviceContainer = "Tenant"
+	result.DeviceHostname = "Device-B"
+	result.DeviceMAC = "02:42:ac:97:38:c5"
 	return &result
 }
 
@@ -42,9 +42,33 @@ func TestAddDevices(t *testing.T) {
 	if err != nil {
 		t.Errorf("%+v", err)
 	}
-	err = cvp.SaveInventory()
+}
+
+func TestSearchTempInventory(t *testing.T) {
+	//cvpInfo := CVPInfo{IPAddress: "10.90.224.178", Username: "cvpadmin", Password: "arista123", Container: "CoreSite"}
+	testdata := buildTestData()
+	cvpInfo := *testdata.CVP
+	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
+	dev, err := cvp.SearchInventory(testdata.DeviceIP)
 	if err != nil {
 		t.Errorf("%+v", err)
+	}
+	if dev == nil {
+		t.Errorf("Did not retreive any devices\n")
+	}
+	t.Logf("Retrieved container status is %s", dev.Status)
+}
+
+func TestSaveCommit(t *testing.T) {
+	//cvpInfo := CVPInfo{IPAddress: "10.90.224.178", Username: "cvpadmin", Password: "arista123", Container: "CoreSite"}
+	testdata := buildTestData()
+	cvpInfo := *testdata.CVP
+	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
+	err := cvp.SaveCommit(testdata.DeviceIP, 5)
+	if err != nil {
+		t.Errorf("%+v", err)
+	} else {
+		t.Logf("Device safely saved")
 	}
 }
 
