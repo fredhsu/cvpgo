@@ -1,6 +1,7 @@
 package cvpgo
 
 import (
+	"log"
 	"testing"
 )
 
@@ -13,6 +14,7 @@ type TestData struct {
 	Cnls         []string
 	NewConfig    string
 	NewCfglet    string
+	NetElementID string
 }
 
 func buildConfigletTestData() *TestData {
@@ -25,7 +27,65 @@ func buildConfigletTestData() *TestData {
 		NewConfig:    "username TESTCONFIG nopassword",
 		NewCfglet:    "Test1",
 		Device:       "Device-A",
+		NetElementID: "02:42:ac:2a:8f:7d",
 	}
+}
+
+func TestValidateCompare(t *testing.T) {
+	data := buildConfigletTestData()
+	t.Logf("Test data: %+v", data)
+	cvpInfo := CVPInfo{IPAddress: data.CvpIP, Username: data.CvpUser, Password: data.CvpPwd, Container: data.CvpContainer}
+	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
+	id := data.NetElementID
+	_, err := cvp.ValidateCompareCfglt(id, []string{})
+	if err != nil {
+		t.Errorf("Error adding configlet : %s", err)
+	}
+	//t.Logf("Return response is %+v", resp)
+}
+
+func TestGenerateReconcile(t *testing.T) {
+	data := buildConfigletTestData()
+	t.Logf("Test data: %+v", data)
+	cvpInfo := CVPInfo{IPAddress: data.CvpIP, Username: data.CvpUser, Password: data.CvpPwd, Container: data.CvpContainer}
+	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
+	id := data.NetElementID
+	resp, err := cvp.ValidateCompareCfglt(id, []string{})
+	if err != nil {
+		log.Printf("Error generating reconcile configlet %+v", err)
+	}
+	configlet := Configlet{
+		Name:   resp.ReconciledConfig.Name,
+		Config: resp.ReconciledConfig.Config,
+	}
+	err = cvp.UpdateReconcile(id, configlet)
+	if err != nil {
+		t.Errorf("Error adding configlet : %s", err)
+	}
+}
+
+func TestPushReconcile(t *testing.T) {
+	data := buildConfigletTestData()
+	t.Logf("Test data: %+v", data)
+	cvpInfo := CVPInfo{IPAddress: data.CvpIP, Username: data.CvpUser, Password: data.CvpPwd, Container: data.CvpContainer}
+	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
+	device, _ := cvp.GetDevice(data.Device)
+	reconcileName := "RECONCILE_" + device.IPAddress
+	dev, _ := cvp.GetDevice(data.Device)
+	t.Logf("Retrieved %+v", dev)
+	cnl := []string{reconcileName}
+	sdata, err := cvp.ApplyConfigletToDevice(dev.IPAddress, dev.Fqdn, dev.SystemMacAddress, cnl, true)
+	if err != nil {
+		t.Errorf("Error applying configlet : %s", err)
+	}
+	taskIds := sdata.Data.TaskIds
+	if err = cvp.ExecuteTasks(taskIds); err != nil {
+		t.Errorf("Error executing tasks : %s", err)
+	}
+	if err = cvp.CheckTasks(taskIds, 10); err != nil {
+		t.Errorf("Some tasks are not completed : %s", err)
+	}
+
 }
 
 func TestAddConfiglet(t *testing.T) {
@@ -64,22 +124,12 @@ func TestApplyConfiglet(t *testing.T) {
 	t.Logf("Test data: %+v", data)
 	cvpInfo := CVPInfo{IPAddress: data.CvpIP, Username: data.CvpUser, Password: data.CvpPwd, Container: data.CvpContainer}
 	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
-	dev, err := cvp.GetDevice(data.Device)
-	//t.Logf("device found %+v", dev)
+	dev, _ := cvp.GetDevice(data.Device)
+	t.Logf("Retrieved %+v", dev)
+	cnl := data.Cnls
+	_, err := cvp.ApplyConfigletToDevice(dev.IPAddress, dev.Fqdn, dev.SystemMacAddress, cnl, true)
 	if err != nil {
-		t.Errorf("Erorr getting device info : %s", err)
-	}
-	cflts, err := cvp.getConfigletsByName(data.Cnls)
-	if err != nil {
-		t.Errorf("Erorr getting configlets from device : %s", err)
-	}
-	//t.Logf("Configlets found %+v", cflts)
-	cnls := getNames(cflts)
-	ckls := getKeys(cflts)
-	t.Logf("Configlet Names:%s, Keys: %s", cnls, ckls)
-	err = cvp.ApplyConfigletToDevice(dev.IPAddress, dev.Fqdn, dev.SystemMacAddress, cnls, ckls)
-	if err != nil {
-		t.Errorf("Erorr applying configlet : %s", err)
+		t.Errorf("Error applying configlet : %s", err)
 	}
 }
 
@@ -117,9 +167,9 @@ func TestRemoveConfiglet(t *testing.T) {
 	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
 	dev, _ := cvp.GetDevice(data.Device)
 	t.Logf("Retrieved %+v", dev)
-	err := cvp.RemoveConfigletFromDevice(dev.IPAddress, dev.Fqdn, dev.Key, []string{data.NewCfglet}, true)
+	_, err := cvp.RemoveConfigletFromDevice(dev.IPAddress, dev.Fqdn, dev.Key, []string{data.NewCfglet}, true)
 	if err != nil {
-		t.Errorf("Error applying configlet : %s", err)
+		t.Errorf("Error removing configlet : %s", err)
 	}
 }
 

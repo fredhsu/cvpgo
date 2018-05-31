@@ -26,10 +26,10 @@ func buildTestData() *InventoryTestData {
 		Username:  "cvpadmin",
 		Password:  "cvpadmin1",
 		Container: "Test"}
-	result.DeviceIP = "172.19.0.3"
+	result.DeviceIP = "192.168.100.1"
 	result.DeviceContainer = "Tenant"
-	result.DeviceHostname = "Device-B"
-	result.DeviceMAC = "02:42:ac:97:38:c5"
+	result.DeviceHostname = "Device-A"
+	result.DeviceMAC = "02:42:ac:2a:8f:7d"
 	return &result
 }
 

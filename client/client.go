@@ -66,6 +66,7 @@ func (c *CvpClient) Call(obj interface{}, svcurl string) ([]byte, error) {
 	jsonValue, err := json.Marshal(obj)
 	log.Printf("Calling POST with JSON: %s", jsonValue)
 	url := c.BaseURL + svcurl
+	log.Printf("Target URL is : %s", url)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
 	for _, c := range c.Cookies {
 		req.AddCookie(c)
