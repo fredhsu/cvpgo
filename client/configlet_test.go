@@ -54,11 +54,7 @@ func TestGenerateReconcile(t *testing.T) {
 	if err != nil {
 		log.Printf("Error generating reconcile configlet %+v", err)
 	}
-	configlet := Configlet{
-		Name:   resp.ReconciledConfig.Name,
-		Config: resp.ReconciledConfig.Config,
-	}
-	err = cvp.UpdateReconcile(id, configlet)
+	err = cvp.UpdateReconcile(id, resp.ReconciledConfig.Name, resp.ReconciledConfig.Config)
 	if err != nil {
 		t.Errorf("Error adding configlet : %s", err)
 	}

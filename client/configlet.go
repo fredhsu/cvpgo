@@ -183,9 +183,13 @@ func (c *CvpClient) ValidateConfig(netElementID, config string) error {
 	return nil
 }
 
-func (c *CvpClient) UpdateReconcile(netElementID string, cfg Configlet) error {
+func (c *CvpClient) UpdateReconcile(netElementID, cName, cConf string) error {
 	url := "/provisioning/updateReconcileConfiglet.do?netElementId=" + url.QueryEscape(netElementID)
-	cfg.Reconciled = true
+	cfg := Configlet{
+		Name:       cName,
+		Config:     cConf,
+		Reconciled: true,
+	}
 	_, err := c.Call(cfg, url)
 	if err != nil {
 		return fmt.Errorf("Error updating reconcile configlet")
@@ -259,10 +263,10 @@ func (c *CvpClient) addTempAction(action ApplyConfiglet) error {
 	}
 	responseBody := JsonData{}
 	if err = json.Unmarshal(resp, &responseBody); err != nil {
-		log.Printf("Error adding configlet %+v", err)
+		return fmt.Errorf("Error adding configlet %+v", err)
 	}
 	if responseBody.ErrorMessage != "" {
-		return fmt.Errorf("Errors from add temp action %+s", responseBody.ErrorMessage)
+		return fmt.Errorf("Errors from add temp action for %+s", responseBody.ErrorMessage)
 	}
 	log.Printf("Response from add temp action %+s", resp)
 	return err

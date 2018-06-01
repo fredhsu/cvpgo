@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -160,6 +161,11 @@ func (c *CvpClient) AddDevice(ipAddr string, cn string) error {
 	addInventory := AddInventory{
 		Data: element,
 	}
+	// In case the device is already in temp Inventory, we're purging it from there
+	if _, err := c.SearchInventory(ipAddr); err != nil {
+		c.CancelTempInventory()
+	}
+
 	addInventoryURL := "/inventory/add/addToInventory.do?startIndex=0&endIndex=15"
 	_, err = c.Call(addInventory, addInventoryURL)
 	return err
@@ -220,10 +226,17 @@ func (c *CvpClient) RemoveDevice(mac string) error {
 	return err
 }
 
-// GetDevice uses the hostname of a device to lookup the full entry in CVP
+// Cancels temp device inventory
+func (c *CvpClient) CancelTempInventory() error {
+	CancelInventoryURL := "/inventory/add/cancelInventory.do"
+	_, err := c.Get(CancelInventoryURL)
+	return err
+}
+
+// GetDevice uses the unique ID of a device to lookup the full entry in CVP
 // and returns the full NetElement entry
-func (c *CvpClient) GetDevice(hostname string) (*NetElement, error) {
-	getDeviceURL := "/inventory/getInventory.do?queryparam=" + hostname + "&startIndex=0&endIndex=0"
+func (c *CvpClient) GetDevice(id string) (*NetElement, error) {
+	getDeviceURL := "/inventory/getInventory.do?queryparam=" + url.QueryEscape(id) + "&startIndex=0&endIndex=0"
 	respbody, err := c.Get(getDeviceURL)
 	respDevice := GetInventory{}
 	err = json.Unmarshal(respbody, &respDevice)
