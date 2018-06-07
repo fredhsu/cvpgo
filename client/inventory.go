@@ -145,6 +145,7 @@ type ContainerListElement struct {
 
 // AddDevice adds a device into CVP's inventory
 func (c *CvpClient) AddDevice(ipAddr string, cn string) error {
+	log.Printf("Adding device %s to container %s\n", ipAddr, cn)
 	container, err := c.GetContainerByName(cn)
 	if err != nil {
 		return err
