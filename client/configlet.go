@@ -53,11 +53,11 @@ type AddConfigletResp struct {
 	} `json:"data"`
 }
 
-type ApplyConfigletData struct {
-	Data []ApplyConfiglet `json:"data"`
+type ActionData struct {
+	Data []Action `json:"data"`
 }
 
-type ApplyConfiglet struct {
+type Action struct {
 	Info                            string   `json:"info"`
 	InfoPreview                     string   `json:"infoPreview"`
 	Action                          string   `json:"action"`
@@ -206,8 +206,6 @@ func (c *CvpClient) UpdateReconcile(netElementID, cName, cConf string) error {
    ckl -- Keys of configlets to be applied (type: List of Strings)
 */
 func (c *CvpClient) ApplyConfigletToDevice(deviceIP, deviceName, deviceMac string, cnl []string, save bool) (sdata SaveData, err error) {
-	// func (c *CvpClient) ApplyConfigletToDevice(deviceName, deviceMac string, cnl, ckl, []string) error {
-	// func (c *CvpClient) ApplyConfigletToDevice(deviceIP, deviceName, deviceMac string, cnl, ckl, cbnl, cbkl []string) error {
 	cfgletCurrent, err := c.GetConfigletByDeviceID(deviceMac)
 	if err != nil {
 		log.Printf("Error retrieving configlets from a device")
@@ -221,7 +219,7 @@ func (c *CvpClient) ApplyConfigletToDevice(deviceIP, deviceName, deviceMac strin
 	}
 	cfgletAll := c.mergeCfglet(cfgletCurrent, cfgletNew)
 	log.Printf("All configlets to be applied : %+v", cfgletAll)
-	applyCfglet := ApplyConfiglet{
+	applyCfglet := Action{
 		Info:                            "Configlet Assign to device: " + deviceName,
 		InfoPreview:                     "<b>Configlet assign</b> to Device " + deviceName,
 		Action:                          "associate",
@@ -250,10 +248,10 @@ func (c *CvpClient) ApplyConfigletToDevice(deviceIP, deviceName, deviceMac strin
 	return sdata, err
 }
 
-func (c *CvpClient) addTempAction(action ApplyConfiglet) error {
+func (c *CvpClient) addTempAction(action Action) error {
 	url := "/provisioning/addTempAction.do?format=topology&queryParam=&nodeId=root"
-	dataArray := []ApplyConfiglet{action}
-	data := ApplyConfigletData{
+	dataArray := []Action{action}
+	data := ActionData{
 		Data: dataArray,
 	}
 	resp, err := c.Call(data, url)
@@ -363,7 +361,7 @@ func (c *CvpClient) RemoveConfigletFromDevice(deviceIP, deviceName, deviceMac st
 		return sdata, err
 	}
 	cfgletRemain := c.filterCfglet(cfgletAll, cfgletRemove)
-	removeCfglet := ApplyConfiglet{
+	removeCfglet := Action{
 		Info:                            "Configlet Remove from device: " + deviceName,
 		InfoPreview:                     "<b>Configlet remove</b> from Device " + deviceName,
 		Action:                          "associate",

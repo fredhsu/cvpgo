@@ -266,6 +266,21 @@ func (c *CvpClient) GetContainerByName(query string) (*Container, error) {
 	return &respContainer.ContainerList[0], err
 }
 
+// Returns a container name based on its ID
+func (c *CvpClient) GetContainerNameById(query string) (string, error) {
+	url := "/provisioning/getContainerInfoById.do?containerId=" + query
+	respbody, err := c.Get(url)
+	respContainer := struct {
+		Name string `json:"name"`
+	}{}
+	err = json.Unmarshal(respbody, &respContainer)
+	if err != nil {
+		log.Printf("Error decoding getcontainerbyid :%s\n", err)
+		return "", err
+	}
+	return respContainer.Name, nil
+}
+
 // GetInventory will return all the devices in CVP
 func (c *CvpClient) GetInventory(query string) (*[]NetElement, error) {
 	getDeviceURL := "/inventory/getInventory.do?queryparam=" + query + "&startIndex=0&endIndex=0"
@@ -280,4 +295,80 @@ func (c *CvpClient) GetInventory(query string) (*[]NetElement, error) {
 		return nil, fmt.Errorf("No devices returned")
 	}
 	return &respDevice.NetElementList, err
+}
+
+func (c *CvpClient) AddContainerToRoot(new string) error {
+	name, err := c.GetContainerNameById("root")
+	if err != nil {
+		log.Printf("Could not find 'root' container")
+		return err
+	}
+	return c.AddContainer(new, name)
+}
+
+func (c *CvpClient) AddContainer(new, parent string) error {
+	newC := &Container{
+		Name: new,
+	}
+	parentC, err := c.GetContainerByName(parent)
+	if err != nil {
+		log.Printf("Parent container %s cannot be found", parent)
+		return err
+	}
+
+	_, err = c.containerOp(newC, parentC, "add")
+	if err != nil {
+		log.Printf("Error applying configlet : %s", err)
+		return err
+	}
+
+	return nil
+}
+
+func (c *CvpClient) DeleteContainer(name, parent string) error {
+	currentC, err := c.GetContainerByName(name)
+	if err != nil {
+		log.Printf("Container %s cannot be found", name)
+		return err
+	}
+	parentC, err := c.GetContainerByName(parent)
+	if err != nil {
+		log.Printf("Parent container %s cannot be found", parent)
+		return err
+	}
+	_, err = c.containerOp(currentC, parentC, "delete")
+	if err != nil {
+		log.Printf("Error applying configlet : %s", err)
+		return err
+	}
+
+	return nil
+}
+
+func (c *CvpClient) containerOp(container, parent *Container, op string) (sdata SaveData, err error) {
+	info := "Performing " + op + " operation on container " + container.Name
+	data := Action{
+		Info:        info,
+		InfoPreview: info,
+		Action:      op,
+		NodeType:    "container",
+		NodeID:      container.Key,
+		NodeName:    container.Name,
+		ToIDType:    "container",
+	}
+
+	if op == "add" {
+		data.ToID = parent.Key
+		data.ToName = parent.Name
+		data.NodeID = "new_container"
+	} else if op == "delete" {
+		data.FromID = parent.Key
+		data.FromName = parent.Name
+	}
+	log.Printf("Operation data read: %+v", data)
+	if err = c.addTempAction(data); err != nil {
+		return sdata, err
+	}
+
+	return c.saveTopologyV2([]string{})
 }

@@ -33,6 +33,26 @@ func buildTestData() *InventoryTestData {
 	return &result
 }
 
+func TestAddContainerToRoot(t *testing.T) {
+	testdata := buildTestData()
+	cvpInfo := *testdata.CVP
+	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
+	err := cvp.AddContainer(cvpInfo.Container, "Tenant")
+	if err != nil {
+		t.Errorf("%+v", err)
+	}
+}
+
+func TestGetContainer(t *testing.T) {
+	testdata := buildTestData()
+	cvpInfo := *testdata.CVP
+	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
+	_, err := cvp.GetContainerByName(cvpInfo.Container)
+	if err != nil {
+		t.Errorf("%+v", err)
+	}
+}
+
 func TestAddDevices(t *testing.T) {
 	//cvpInfo := CVPInfo{IPAddress: "10.90.224.178", Username: "cvpadmin", Password: "arista123", Container: "CoreSite"}
 	testdata := buildTestData()
@@ -104,6 +124,16 @@ func TestRemoveDevices(t *testing.T) {
 	cvpInfo := *testdata.CVP
 	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
 	err := cvp.RemoveDevice(testdata.DeviceMAC)
+	if err != nil {
+		t.Errorf("%+v", err)
+	}
+}
+
+func TestDeleteContainer(t *testing.T) {
+	testdata := buildTestData()
+	cvpInfo := *testdata.CVP
+	cvp := New(cvpInfo.IPAddress, cvpInfo.Username, cvpInfo.Password)
+	err := cvp.DeleteContainer(cvpInfo.Container, "Tenant")
 	if err != nil {
 		t.Errorf("%+v", err)
 	}
