@@ -10,8 +10,8 @@ import (
 
 type JsonData struct {
 	Data         interface{} `json:"data,omitempty"`
-	ErrorCode    string      `json:"errorCode"`
-	ErrorMessage string      `json:"errorMessage"`
+	ErrorCode    string      `json:"errorCode,omitempty"`
+	ErrorMessage string      `json:"errorMessage,omitempty"`
 }
 
 type SaveData struct {
