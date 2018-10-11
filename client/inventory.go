@@ -167,7 +167,7 @@ func (c *CvpClient) AddDevice(ipAddr string, cn string) error {
 		c.CancelTempInventory()
 	}
 
-	addInventoryURL := "/inventory/add/addToInventory.do?startIndex=0&endIndex=15"
+	addInventoryURL := "/inventory/devices"
 	_, err = c.Call(addInventory, addInventoryURL)
 	return err
 }
