@@ -84,9 +84,12 @@ func (c *CvpClient) Call(obj interface{}, svcurl string) ([]byte, error) {
 }
 
 // Get issues a HTTP GET to the specified CVP service and returns the data
+// URL should begin with a leading / and /cvpservice will automatically be prepended
+
 func (c *CvpClient) Get(svcurl string) ([]byte, error) {
 	url := c.BaseURL + svcurl
 	req, err := http.NewRequest("GET", url, nil)
+	fmt.Println("making request: ", req)
 	for _, c := range c.Cookies {
 		req.AddCookie(c)
 	}

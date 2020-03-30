@@ -66,15 +66,35 @@ type ApplyConfiglet struct {
 	IgnoreConfigletBuilderNamesList []string `json:"ignoreConfigletBuilderNamesList"`
 }
 
-type Configlet struct {
-	Config string `json:"config"`
-	Name   string `json:"name"`
-}
-
 type ValidateRequest struct {
 	NetElementID string   `json:"netElementId"`
 	ConfigIDList []string `json:"configIdList"`
 	PageType     string   `json:"pageType"`
+}
+
+// ConfigletList is a list of configlets returned by the API
+type ConfigletList struct {
+	Total int         `json:"total"`
+	Data  []Configlet `json:"data"`
+}
+
+// Configlet is the output of getting a configlet from CV
+type Configlet struct {
+	FactoryID            int    `json:"factoryId"`
+	Reconciled           bool   `json:"reconciled"`
+	IsDefault            string `json:"isDefault"`
+	Note                 string `json:"note"`
+	ContainerCount       int    `json:"containerCount"`
+	NetElementCount      int    `json:"netElementCount"`
+	IsAutoBuilder        string `json:"isAutoBuilder"`
+	DateTimeInLongFormat int    `json:"dateTimeInLongFormat"`
+	User                 string `json:"user"`
+	Config               string `json:"config"`
+	Name                 string `json:"name"`
+	Key                  string `json:"key"`
+	ID                   int    `json:"id"`
+	Type                 string `json:"type"`
+	IsDraft              bool   `json:"isDraft"`
 }
 
 func (c *CvpClient) AddConfiglet(configlet Configlet) (AddConfigletData, error) {
