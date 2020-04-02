@@ -143,6 +143,33 @@ type ContainerListElement struct {
 	Type             string `json:"type"`
 }
 
+// Device is an inventory item
+type Device struct {
+	ModelName            string
+	InternalVersion      string
+	SystemMacAddress     string
+	MemTotal             int
+	MemFree              int
+	BootupTimestamp      float64
+	Version              string
+	Architecture         string
+	InternalBuild        string
+	HardwareRevision     string
+	DomainName           string
+	Hostname             string
+	Fqdn                 string
+	SerialNumber         string
+	DanzEnabled          bool
+	MlagEnabled          bool
+	ParentContainerKey   string
+	Status               string
+	ComplianceCode       string
+	ComplianceIndication string
+	ZtpMode              bool
+	UnAuthorized         bool
+	IpAddress            string
+}
+
 // AddDevice adds a device into CVP's inventory
 func (c *CvpClient) AddDevice(ipAddr string, cn string) error {
 	log.Printf("Adding device %s to container %s\n", ipAddr, cn)
@@ -283,19 +310,22 @@ func (c *CvpClient) GetContainerNameById(query string) (string, error) {
 }
 
 // GetInventory will return all the devices in CVP
-func (c *CvpClient) GetInventory(query string) (*[]NetElement, error) {
-	getDeviceURL := "/inventory/getInventory.do?queryparam=" + query + "&startIndex=0&endIndex=0"
-	respbody, err := c.Get(getDeviceURL)
-	respDevice := GetInventory{}
-	err = json.Unmarshal(respbody, &respDevice)
+func (c *CvpClient) GetInventory(provisioned bool) (*[]Device, error) {
+	getInventoryURL := "/inventory/devices"
+	if provisioned {
+		getInventoryURL = getInventoryURL + "?provisioned=true"
+	}
+	respbody, err := c.Get(getInventoryURL)
+	inventory := []Device{}
+	err = json.Unmarshal(respbody, &inventory)
 	if err != nil {
 		log.Printf("Error decoding getdevice :%s\n", err)
 		return nil, err
 	}
-	if len(respDevice.NetElementList) == 0 {
+	if len(inventory) == 0 {
 		return nil, fmt.Errorf("No devices returned")
 	}
-	return &respDevice.NetElementList, err
+	return &inventory, err
 }
 
 func (c *CvpClient) AddContainerToRoot(new string) error {
