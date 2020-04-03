@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	cvpgo "github.com/fredhsu/cvpgo/client"
@@ -51,4 +52,13 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
+	inventory, err := cvp.GetInventory(false)
+	fmt.Println("=======================")
+	fmt.Println("inventory")
+	fmt.Println("=======================")
+	inventoryJSON, _ := json.Marshal(inventory)
+	fmt.Println(string(inventoryJSON))
+	// fmt.Println(inventory)
+
 }
